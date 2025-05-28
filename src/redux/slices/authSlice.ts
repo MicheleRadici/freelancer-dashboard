@@ -1,4 +1,12 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  signOut,
+  updateProfile,
+  User as FirebaseUser
+} from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 // Types
 interface User {
@@ -27,17 +35,16 @@ export const loginUser = createAsyncThunk(
   'auth/login',
   async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
     try {
-      // In a real app, this would be an API call
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API latency
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
       
-      // Mock successful response
       return {
-        id: '1',
-        name: 'John Doe',
-        email: email,
+        id: firebaseUser.uid,
+        name: firebaseUser.displayName || 'User',
+        email: firebaseUser.email || '',
       };
-    } catch (error) {
-      return rejectWithValue('Login failed. Please check your credentials.');
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Login failed. Please check your credentials.');
     }
   }
 );
@@ -46,17 +53,32 @@ export const registerUser = createAsyncThunk(
   'auth/register',
   async ({ name, email, password }: { name: string; email: string; password: string }, { rejectWithValue }) => {
     try {
-      // In a real app, this would be an API call
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API latency
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
       
-      // Mock successful response
+      // Update the user's display name
+      await updateProfile(firebaseUser, {
+        displayName: name
+      });
+      
       return {
-        id: '1',
+        id: firebaseUser.uid,
         name: name,
-        email: email,
+        email: firebaseUser.email || '',
       };
-    } catch (error) {
-      return rejectWithValue('Registration failed. Please try again.');
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Registration failed. Please try again.');
+    }
+  }
+);
+
+export const logoutUser = createAsyncThunk(
+  'auth/logout',
+  async (_, { rejectWithValue }) => {
+    try {
+      await signOut(auth);
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Logout failed.');
     }
   }
 );
@@ -73,6 +95,14 @@ const authSlice = createSlice({
     },
     clearError: (state) => {
       state.error = null;
+    },
+    setUser: (state, action: PayloadAction<User>) => {
+      state.user = action.payload;
+      state.isAuthenticated = true;
+    },
+    clearUser: (state) => {
+      state.user = null;
+      state.isAuthenticated = false;
     },
   },
   extraReducers: (builder) => {
@@ -107,8 +137,24 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       });
+
+    // Logout cases
+    builder
+      .addCase(logoutUser.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.isLoading = false;
+        state.isAuthenticated = false;
+        state.user = null;
+        state.error = null;
+      })
+      .addCase(logoutUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
   },
 });
 
-export const { logout, clearError } = authSlice.actions;
+export const { logout, clearError, setUser, clearUser } = authSlice.actions;
 export default authSlice.reducer;

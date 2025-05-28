@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
 
 // Define the validation schema with zod
 const registerSchema = z.object({
@@ -25,7 +27,8 @@ const registerSchema = z.object({
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterForm() {
-  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const { register: registerUser, isLoading, error } = useAuth();
   
   // Initialize form with validation schema
   const form = useForm<RegisterFormValues>({
@@ -40,18 +43,13 @@ export default function RegisterForm() {
 
   // Form submission handler
   const onSubmit = async (data: RegisterFormValues) => {
-    setIsLoading(true);
     try {
-      // Here you would normally handle registration
-      console.log("Register data:", data);
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      // Redirect to login after successful registration
-      window.location.href = "/auth/login";
+      const result = await registerUser(data.name, data.email, data.password);
+      if (result.meta.requestStatus === 'fulfilled') {
+        router.push('/dashboard');
+      }
     } catch (error) {
       console.error("Registration failed:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -111,6 +109,11 @@ export default function RegisterForm() {
           </p>
         )}
       </div>
+      {error && (
+        <p className="text-sm text-destructive text-center">
+          {error}
+        </p>
+      )}
       <Button type="submit" className="w-full" disabled={isLoading}>
         {isLoading ? "Creating account..." : "Create account"}
       </Button>

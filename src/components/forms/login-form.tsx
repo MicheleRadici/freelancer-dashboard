@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
 
 // Define the validation schema with zod
 const loginSchema = z.object({
@@ -19,7 +21,8 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginForm() {
-  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const { login, isLoading, error } = useAuth();
   
   // Initialize form with validation schema
   const form = useForm<LoginFormValues>({
@@ -32,18 +35,13 @@ export default function LoginForm() {
 
   // Form submission handler
   const onSubmit = async (data: LoginFormValues) => {
-    setIsLoading(true);
     try {
-      // Here you would normally handle authentication
-      console.log("Login data:", data);
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      // Redirect to dashboard after successful login
-      window.location.href = "/dashboard";
+      const result = await login(data.email, data.password);
+      if (result.meta.requestStatus === 'fulfilled') {
+        router.push('/dashboard');
+      }
     } catch (error) {
       console.error("Login failed:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -76,6 +74,11 @@ export default function LoginForm() {
           </p>
         )}
       </div>
+      {error && (
+        <p className="text-sm text-destructive text-center">
+          {error}
+        </p>
+      )}
       <Button type="submit" className="w-full" disabled={isLoading}>
         {isLoading ? "Logging in..." : "Login"}
       </Button>
