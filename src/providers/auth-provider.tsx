@@ -4,9 +4,9 @@ import { createContext, useContext, useEffect, ReactNode } from 'react';
 import { onAuthStateChanged, User as FirebaseUser, getIdToken } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { useAppDispatch } from '@/hooks/useRedux';
-import { setUser, clearUser } from '@/redux/slices/authSlice';
+import { setUser, clearUser, setProfile } from '@/redux/slices/authSlice';
 import Cookies from 'js-cookie';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   // Context can be extended in the future if needed
@@ -33,17 +33,47 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Get Firebase ID token and set cookie
         const token = await getIdToken(firebaseUser);
         Cookies.set('auth-token', token, { expires: 1 });
-        // Fetch Firestore profile
+        // Firestore profile logic
+        const userRef = doc(db, 'users', firebaseUser.uid);
         let profile = null;
         try {
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          profile = userDoc.exists() ? userDoc.data() : null;
+          const userDoc = await getDoc(userRef);
+          if (!userDoc.exists()) {
+            // Auto-create user profile if not exists
+            const newProfile = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              name: firebaseUser.displayName || 'User',
+              role: 'freelancer', // Default role, or customize as needed
+              createdAt: new Date(),
+            };
+            await setDoc(userRef, newProfile);
+            profile = newProfile;
+          } else {
+            profile = userDoc.data();
+          }
         } catch (e) {
           // ignore profile fetch error
         }
         // Set user and profile separately
-        dispatch({ type: 'auth/setUser', payload: user });
-        dispatch({ type: 'auth/profile', payload: profile });
+        dispatch(setUser(user));
+        if (
+          profile &&
+          typeof profile.uid === 'string' &&
+          typeof profile.email === 'string' &&
+          typeof profile.name === 'string' &&
+          typeof profile.role === 'string'
+        ) {
+          dispatch(setProfile({
+            uid: profile.uid,
+            email: profile.email,
+            name: profile.name,
+            role: profile.role,
+            createdAt: profile.createdAt || null,
+          }));
+        } else {
+          dispatch(setProfile(null));
+        }
       } else {
         // User is signed out
         Cookies.remove('auth-token');
