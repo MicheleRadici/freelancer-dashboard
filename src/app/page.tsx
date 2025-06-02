@@ -32,9 +32,9 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24">
       <div className="z-10 max-w-5xl w-full flex flex-col items-center justify-center text-center">
-        <h1 className="text-4xl font-bold mb-8">Freelancer Dashboard</h1>
+        <h1 className="text-4xl font-bold mb-8">Welcome to WorkForge</h1>
         <p className="mb-8 text-lg">
-          Manage your freelance business all in one place
+          The platform for clients, freelancers, and admins to collaborate on projects.
         </p>
         <div className="flex gap-4">
           <Link

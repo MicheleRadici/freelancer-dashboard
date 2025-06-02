@@ -6,8 +6,8 @@ import { Providers } from './providers';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Freelancer Dashboard',
-  description: 'Dashboard for freelancers to manage their projects and clients',
+  title: 'WorkForge',
+  description: 'WorkForge: Platform for clients, freelancers, and admins to manage projects',
 };
 
 export default function RootLayout({

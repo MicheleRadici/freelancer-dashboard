@@ -1,21 +1,24 @@
-# Freelancer Dashboard 💼
+# WorkForge 🚀
 
-A responsive and minimal dashboard app for freelancers to track their income, expenses, and clients. Built with Next.js, TailwindCSS, and TypeScript.
+A modern SaaS platform for connecting clients and freelancers, with robust role-based dashboards and project management. Built with Next.js, Firebase, TailwindCSS, and TypeScript.
 
 ## 🚀 Features
 
-- 📊 Income & expense tracking
-- 🧾 Client list with invoices
-- 📅 Task & deadline management
-- 💡 Clean, modern UI with TailwindCSS
-- 🔒 Fully responsive for mobile and desktop
+- 🧑‍💼 Role-based dashboards for Admins, Clients, and Freelancers
+- 📝 Clients can submit and track their projects
+- 🛠️ Freelancers can view and pick up available projects
+- 👤 Admins can manage users and all projects
+- 💡 Clean, modern UI with full dark/light mode support
+- 🔒 Secure authentication and route protection
+- 📱 Fully responsive for mobile and desktop
 
 ## 🔧 Tech Stack
 
 - **Framework:** [Next.js](https://nextjs.org/)
+- **Auth & DB:** [Firebase](https://firebase.google.com/)
 - **Language:** TypeScript
 - **Styling:** [TailwindCSS](https://tailwindcss.com/)
-- **Icons & UI:** Lucide + shadcn/ui
+- **UI:** shadcn/ui + Lucide icons
 - **Deployment:** [Vercel](https://vercel.com/) *(Coming soon)*
 
 ## 🖥️ Getting Started
@@ -23,7 +26,12 @@ A responsive and minimal dashboard app for freelancers to track their income, ex
 Clone the repo and run locally:
 
 ```bash
-git clone https://github.com/MicheleRadici/freelancer-dashboard.git
-cd freelancer-dashboard
+git clone https://github.com/MicheleRadici/workforge.git
+cd workforge
 npm install
 npm run dev
+```
+
+---
+
+For more details, see the documentation in `FIREBASE_AUTH_SETUP.md`.
