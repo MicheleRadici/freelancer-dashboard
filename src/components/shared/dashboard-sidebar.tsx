@@ -4,7 +4,6 @@ import { useAuth } from '@/hooks/useAuth';
 
 export default function DashboardSidebar() {
   const { profile } = useAuth();
-  // Only show nav items for the current role, and remove the generic Dashboard
   let navItems: { label: string; path: string }[] = [];
   if (profile?.role === 'admin') {
     navItems = [
@@ -15,7 +14,7 @@ export default function DashboardSidebar() {
   } else if (profile?.role === 'freelancer') {
     navItems = [
       { label: 'Dashboard', path: '/dashboard/freelancer' },
-      { label: 'Clients', path: '/dashboard/clients' },
+      { label: 'Clients', path: '/freelancer/clients' },
     ];
   } else if (profile?.role === 'client') {
     navItems = [
