@@ -53,7 +53,7 @@ export default function RegisterForm() {
       const displayName = `${data.name} ${data.surname}`.trim();
       const result = await registerUser(displayName, data.email, data.password, data.role);
       if (result.meta.requestStatus === 'fulfilled') {
-        router.push('/dashboard');
+        router.push('/pages/dashboard');
       }
     } catch (error) {
       console.error("Registration failed:", error);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,7 +22,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginForm() {
   const router = useRouter();
-  const { login, isLoading, error } = useAuth();
+  const { login, isLoading, error, profile } = useAuth();
   
   // Initialize form with validation schema
   const form = useForm<LoginFormValues>({
@@ -33,13 +33,22 @@ export default function LoginForm() {
     },
   });
 
+  // Redirect after login based on role
+  useEffect(() => {
+    if (profile?.role === 'admin') {
+      router.replace('/pages/dashboard/admin');
+    } else if (profile?.role === 'freelancer') {
+      router.replace('/pages/dashboard/freelancer');
+    } else if (profile?.role === 'client') {
+      router.replace('/pages/dashboard/client');
+    }
+  }, [profile, router]);
+
   // Form submission handler
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      const result = await login(data.email, data.password);
-      if (result.meta.requestStatus === 'fulfilled') {
-        router.push('/dashboard');
-      }
+      await login(data.email, data.password);
+      // Navigation is handled by useEffect above
     } catch (error) {
       console.error("Login failed:", error);
     }

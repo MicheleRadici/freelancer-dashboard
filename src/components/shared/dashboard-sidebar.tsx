@@ -7,19 +7,19 @@ export default function DashboardSidebar() {
   let navItems: { label: string; path: string }[] = [];
   if (profile?.role === 'admin') {
     navItems = [
-      { label: 'Dashboard', path: '/dashboard/admin' },
-      { label: 'Manage Users', path: '/admin/users' },
-      { label: 'Create Project', path: '/admin/create-project' },
+      { label: 'Dashboard', path: '/pages/dashboard/admin' },
+      { label: 'Manage Users', path: '/pages/admin/users' },
+      { label: 'Create Project', path: '/pages/admin/create-project' },
     ];
   } else if (profile?.role === 'freelancer') {
     navItems = [
-      { label: 'Dashboard', path: '/dashboard/freelancer' },
-      { label: 'Clients', path: '/freelancer/clients' },
+      { label: 'Dashboard', path: '/pages/dashboard/freelancer' },
+      { label: 'Clients', path: '/pages/clients' },
     ];
   } else if (profile?.role === 'client') {
     navItems = [
-      { label: 'Dashboard', path: '/dashboard/client' },
-      { label: 'Submit Project', path: '/dashboard/client/new-project' },
+      { label: 'Dashboard', path: '/pages/dashboard/client' },
+      { label: 'Submit Project', path: '/pages/new-project' },
     ];
   }
 

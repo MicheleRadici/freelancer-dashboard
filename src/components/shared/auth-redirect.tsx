@@ -9,7 +9,7 @@ interface AuthRedirectProps {
   redirectTo?: string;
 }
 
-export default function AuthRedirect({ children, redirectTo = '/dashboard' }: AuthRedirectProps) {
+export default function AuthRedirect({ children, redirectTo = '/pages/dashboard' }: AuthRedirectProps) {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
