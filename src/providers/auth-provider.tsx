@@ -1,10 +1,11 @@
 "use client";
 
 import { createContext, useContext, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { onAuthStateChanged, User as FirebaseUser, getIdToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAppDispatch } from '@/hooks/useRedux';
 import { setUser, clearUser } from '@/redux/slices/authSlice';
+import Cookies from 'js-cookie';
 
 interface AuthContextType {
   // Context can be extended in the future if needed
@@ -20,7 +21,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         // User is signed in
         const user = {
@@ -28,9 +29,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
           name: firebaseUser.displayName || 'User',
           email: firebaseUser.email || '',
         };
+        // Get Firebase ID token and set cookie
+        const token = await getIdToken(firebaseUser);
+        Cookies.set('auth-token', token, { expires: 1 });
         dispatch(setUser(user));
       } else {
         // User is signed out
+        Cookies.remove('auth-token');
         dispatch(clearUser());
       }
     });

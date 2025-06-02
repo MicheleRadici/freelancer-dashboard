@@ -7,8 +7,9 @@ import {
   User as FirebaseUser
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import Cookies from 'js-cookie';
 
-// Types
+// Interfaces
 interface User {
   id: string;
   name: string;
@@ -77,6 +78,8 @@ export const logoutUser = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       await signOut(auth);
+      // Remove auth token cookie on logout
+      Cookies.remove('auth-token');
     } catch (error: any) {
       return rejectWithValue(error.message || 'Logout failed.');
     }
