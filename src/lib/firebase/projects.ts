@@ -1,4 +1,4 @@
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export const getFreelancerProjects = async (uid: string) => {
@@ -23,4 +23,11 @@ export const getClientProjects = async (uid: string) => {
   }));
 
   return projects;
+};
+
+export const addProject = async (project: any) => {
+  return await addDoc(collection(db, "projects"), {
+    ...project,
+    createdAt: new Date(),
+  });
 };

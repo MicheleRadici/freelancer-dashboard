@@ -17,7 +17,7 @@ export default function DashboardSidebar() {
     ] : []),
     ...(profile?.role === 'client' ? [
       { label: 'Client', path: '/dashboard/client' },
-      { label: 'Submit Project', path: '/client/new-project' },
+      { label: 'Submit Project', path: '/dashboard/client/new-project' },
     ] : []),
   ];
 
