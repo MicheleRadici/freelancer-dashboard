@@ -45,12 +45,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
               email: firebaseUser.email || '',
               name: firebaseUser.displayName || 'User',
               role: 'freelancer', // Default role, or customize as needed
-              createdAt: new Date(),
+              createdAt: new Date().toISOString(),
             };
             await setDoc(userRef, newProfile);
             profile = newProfile;
           } else {
             profile = userDoc.data();
+            // Convert Firestore Timestamp to ISO string if needed
+            if (profile.createdAt && typeof profile.createdAt.toDate === 'function') {
+              profile.createdAt = profile.createdAt.toDate().toISOString();
+            }
           }
         } catch (e) {
           // ignore profile fetch error
