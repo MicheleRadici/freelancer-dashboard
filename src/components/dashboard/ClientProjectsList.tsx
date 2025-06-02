@@ -28,14 +28,23 @@ export default function ClientProjectsList({ uid }: { uid: string }) {
       <h2 className="text-lg font-medium">Your Projects</h2>
       <ul className="space-y-2 mt-2">
         {projects.map((project) => (
-          <li key={project.id} className="border p-3 rounded-md shadow-sm bg-gray-50">
-            <div className="font-semibold">{project.title}</div>
-            <div className="text-sm text-gray-600">{project.description}</div>
-            <div className="text-sm mt-1">💰 Budget: ${project.budget}</div>
-            <div className="text-sm">📌 Status: {project.status}</div>
+          <li
+            key={project.id}
+            className="border border-gray-200 dark:border-gray-700 p-4 rounded-md shadow-sm bg-white dark:bg-[#18181b] transition-colors"
+          >
+            <div className="font-semibold text-black dark:text-white mb-1">{project.title}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">{project.description}</div>
+            <div className="text-sm flex items-center gap-1 text-amber-700 dark:text-amber-400 mb-1">
+              <span role="img" aria-label="budget">💰</span> Budget: ${project.budget}
+            </div>
+            <div className="text-sm flex items-center gap-1 text-pink-700 dark:text-pink-400">
+              <span role="img" aria-label="status">📌</span> Status: {project.status}
+            </div>
           </li>
         ))}
-        {projects.length === 0 && <li className="text-gray-500">No projects found.</li>}
+        {projects.length === 0 && (
+          <li className="text-gray-500 dark:text-gray-400">No projects found.</li>
+        )}
       </ul>
     </div>
   );
