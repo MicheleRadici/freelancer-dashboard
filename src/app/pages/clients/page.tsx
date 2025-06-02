@@ -10,6 +10,8 @@ import DashboardSidebar from "@/components/shared/dashboard-sidebar";
 import DashboardHeader from "@/components/shared/dashboard-header";
 import { useAuth } from "@/hooks/useAuth";
 import { doc, updateDoc } from "firebase/firestore";
+import { getFreelancerProjects } from "@/lib/firebase/projects";
+import { ProjectCard } from "@/components/dashboard/ProjectCard";
 
 interface Client {
   name: string;
@@ -24,12 +26,14 @@ interface Project {
   budget: number;
   clientName: string;
   status: string;
+  createdAt?: any;
 }
 
 export default function FreelancerClientsPage() {
   const { profile } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [assignedProjects, setAssignedProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -45,6 +49,20 @@ export default function FreelancerClientsPage() {
           query(collection(db, "projects"), where("freelancerId", "in", [null, ""]))
         );
         setProjects(projectsSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Project)));
+
+        // Fetch projects assigned to this freelancer
+        if (profile?.uid) {
+          const assigned = await getFreelancerProjects(profile.uid);
+          setAssignedProjects(assigned.map((proj: any) => ({
+            id: proj.id,
+            title: proj.title,
+            description: proj.description,
+            budget: proj.budget,
+            clientName: proj.clientName,
+            status: proj.status,
+            createdAt: proj.createdAt,
+          })));
+        }
       } catch (err) {
         setError("Failed to load data.");
       } finally {
@@ -52,7 +70,7 @@ export default function FreelancerClientsPage() {
       }
     };
     fetchData();
-  }, []);
+  }, [profile?.uid]);
 
   // Claim project handler
   const handleClaimProject = async (projectId: string) => {
@@ -80,6 +98,31 @@ export default function FreelancerClientsPage() {
         <div className="flex flex-col flex-1">
           <DashboardHeader />
           <main className="flex-1 max-w-6xl mx-auto p-6 space-y-10">
+            {/* Assigned Projects Section */}
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <Briefcase className="w-6 h-6 text-primary" />
+                <h1 className="text-2xl font-bold">Your Assigned Projects</h1>
+              </div>
+              <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                {assignedProjects.length > 0 ? (
+                  assignedProjects.map((proj) => (
+                    <ProjectCard
+                      key={proj.id}
+                      title={proj.title}
+                      description={proj.description}
+                      budget={proj.budget}
+                      clientName={proj.clientName}
+                      status={proj.status}
+                      createdAt={proj.createdAt}
+                    />
+                  ))
+                ) : (
+                  <div className="col-span-full text-muted-foreground text-center py-8">No assigned projects</div>
+                )}
+              </div>
+            </section>
+
             <section>
               <div className="flex items-center gap-2 mb-4">
                 <Briefcase className="w-6 h-6 text-primary" />
@@ -88,23 +131,19 @@ export default function FreelancerClientsPage() {
               <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                 {projects.length > 0 ? (
                   projects.map((proj) => (
-                    <div key={proj.id} className="bg-card border border-border rounded-xl shadow-sm p-5 flex flex-col gap-2 transition-colors hover:border-primary">
-                      <h2 className="font-semibold text-lg text-primary-foreground dark:text-primary mb-1 flex items-center gap-2">
-                        <Briefcase className="w-4 h-4" /> {proj.title}
-                      </h2>
-                      <p className="text-sm text-muted-foreground mb-1 line-clamp-2">{proj.description}</p>
-                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                        <span>Budget: <span className="font-medium text-foreground">${proj.budget}</span></span>
-                        <span>Status: <span className="capitalize font-medium text-foreground">{proj.status}</span></span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <UserPlus className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-xs">Client: <span className="font-medium text-foreground">{proj.clientName}</span></span>
-                      </div>
+                    <ProjectCard
+                      key={proj.id}
+                      title={proj.title}
+                      description={proj.description}
+                      budget={proj.budget}
+                      clientName={proj.clientName}
+                      status={proj.status}
+                      createdAt={proj.createdAt}
+                    >
                       <Button size="sm" className="mt-3 w-full" variant="outline" onClick={() => handleClaimProject(proj.id)}>
                         Claim Project
                       </Button>
-                    </div>
+                    </ProjectCard>
                   ))
                 ) : (
                   <div className="col-span-full text-muted-foreground text-center py-8">No available projects</div>

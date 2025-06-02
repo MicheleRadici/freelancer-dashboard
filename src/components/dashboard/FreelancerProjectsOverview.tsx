@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getFreelancerProjects } from "@/lib/firebase/projects";
 import { useAuth } from "@/hooks/useAuth";
+import { ProjectCard } from "@/components/dashboard/ProjectCard";
 
 export default function FreelancerProjectsOverview() {
   const { profile } = useAuth();
@@ -32,14 +33,15 @@ export default function FreelancerProjectsOverview() {
   return (
     <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
       {projects.map((project) => (
-        <div key={project.id} className="bg-card rounded-lg shadow p-4">
-          <h3 className="font-semibold text-lg mb-1">{project.title}</h3>
-          <p className="text-sm text-muted-foreground mb-2">{project.description}</p>
-          <p className="text-sm mb-1">Client: {project.clientName}</p>
-          <p className="text-sm mb-1">Budget: ${project.budget}</p>
-          <p className="text-sm mb-1">Status: <span className="capitalize">{project.status}</span></p>
-          <p className="text-xs text-muted-foreground">Created: {project.createdAt?.toDate ? project.createdAt.toDate().toLocaleDateString() : "–"}</p>
-        </div>
+        <ProjectCard
+          key={project.id}
+          title={project.title}
+          description={project.description}
+          budget={project.budget}
+          clientName={project.clientName}
+          status={project.status}
+          createdAt={project.createdAt}
+        />
       ))}
     </div>
   );
