@@ -23,15 +23,11 @@ export default function DashboardSidebar() {
     ];
   }
 
-  let dashboardTitle = "WorkForge";
-  if (profile?.role === "admin") dashboardTitle = "Admin Dashboard";
-  else if (profile?.role === "client") dashboardTitle = "Client Dashboard";
-  else if (profile?.role === "freelancer") dashboardTitle = "Freelancer Dashboard";
 
   return (
     <div className="hidden md:flex w-64 flex-col bg-card border-r h-screen sticky top-0">
       <div className="p-4 border-b">
-        <h2 className="text-xl font-bold">{dashboardTitle}</h2>
+        <h2 className="text-xl font-bold">WorkForge</h2>
       </div>
       <nav className="flex-1 p-4">
         <ul className="space-y-1">
