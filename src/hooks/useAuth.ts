@@ -3,7 +3,7 @@ import { loginUser, registerUser, logoutUser } from '@/redux/slices/authSlice';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
-  const { user, isAuthenticated, isLoading, error } = useAppSelector((state) => state.auth);
+  const { user, profile, isAuthenticated, isLoading, error } = useAppSelector((state) => state.auth);
 
   const login = async (email: string, password: string) => {
     return await dispatch(loginUser({ email, password }));
@@ -19,6 +19,7 @@ export const useAuth = () => {
 
   return {
     user,
+    profile,
     isAuthenticated,
     isLoading,
     error,

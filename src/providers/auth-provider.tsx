@@ -2,10 +2,11 @@
 
 import { createContext, useContext, useEffect, ReactNode } from 'react';
 import { onAuthStateChanged, User as FirebaseUser, getIdToken } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { useAppDispatch } from '@/hooks/useRedux';
 import { setUser, clearUser } from '@/redux/slices/authSlice';
 import Cookies from 'js-cookie';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   // Context can be extended in the future if needed
@@ -32,7 +33,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Get Firebase ID token and set cookie
         const token = await getIdToken(firebaseUser);
         Cookies.set('auth-token', token, { expires: 1 });
-        dispatch(setUser(user));
+        // Fetch Firestore profile
+        let profile = null;
+        try {
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          profile = userDoc.exists() ? userDoc.data() : null;
+        } catch (e) {
+          // ignore profile fetch error
+        }
+        // Set user and profile separately
+        dispatch({ type: 'auth/setUser', payload: user });
+        dispatch({ type: 'auth/profile', payload: profile });
       } else {
         // User is signed out
         Cookies.remove('auth-token');

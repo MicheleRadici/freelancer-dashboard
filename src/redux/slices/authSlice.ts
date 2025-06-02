@@ -6,7 +6,8 @@ import {
   updateProfile,
   User as FirebaseUser
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
+import { collection, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import Cookies from 'js-cookie';
 
 // Interfaces
@@ -16,8 +17,17 @@ interface User {
   email: string;
 }
 
+interface UserProfile {
+  uid: string;
+  email: string;
+  name: string;
+  role: string;
+  createdAt?: any;
+}
+
 interface AuthState {
   user: User | null;
+  profile: UserProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
@@ -26,6 +36,7 @@ interface AuthState {
 // Initial state
 const initialState: AuthState = {
   user: null,
+  profile: null,
   isAuthenticated: false,
   isLoading: false,
   error: null,
@@ -39,10 +50,15 @@ export const loginUser = createAsyncThunk(
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
       
+      // Fetch Firestore profile
+      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+      const profile = userDoc.exists() ? userDoc.data() : null;
+      
       return {
         id: firebaseUser.uid,
         name: firebaseUser.displayName || 'User',
         email: firebaseUser.email || '',
+        profile,
       };
     } catch (error: any) {
       return rejectWithValue(error.message || 'Login failed. Please check your credentials.');
@@ -57,15 +73,23 @@ export const registerUser = createAsyncThunk(
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
       
-      // Update the user's display name
-      await updateProfile(firebaseUser, {
-        displayName: name
-      });
+      await updateProfile(firebaseUser, { displayName: name });
+      
+      // Save additional user info in Firestore
+      const profile: UserProfile = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email || '',
+        name,
+        role: 'freelancer',
+        createdAt: serverTimestamp(),
+      };
+      await setDoc(doc(db, 'users', firebaseUser.uid), profile);
       
       return {
         id: firebaseUser.uid,
         name: name,
         email: firebaseUser.email || '',
+        profile,
       };
     } catch (error: any) {
       return rejectWithValue(error.message || 'Registration failed. Please try again.');
@@ -93,6 +117,7 @@ const authSlice = createSlice({
   reducers: {
     logout: (state) => {
       state.user = null;
+      state.profile = null;
       state.isAuthenticated = false;
       state.error = null;
     },
@@ -103,8 +128,12 @@ const authSlice = createSlice({
       state.user = action.payload;
       state.isAuthenticated = true;
     },
+    setProfile: (state, action: PayloadAction<UserProfile | null>) => {
+      state.profile = action.payload;
+    },
     clearUser: (state) => {
       state.user = null;
+      state.profile = null;
       state.isAuthenticated = false;
     },
   },
@@ -115,10 +144,15 @@ const authSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(loginUser.fulfilled, (state, action: PayloadAction<User>) => {
+      .addCase(loginUser.fulfilled, (state, action: PayloadAction<any>) => {
         state.isLoading = false;
         state.isAuthenticated = true;
-        state.user = action.payload;
+        state.user = {
+          id: action.payload.id,
+          name: action.payload.name,
+          email: action.payload.email,
+        };
+        state.profile = action.payload.profile || null;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -131,10 +165,15 @@ const authSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(registerUser.fulfilled, (state, action: PayloadAction<User>) => {
+      .addCase(registerUser.fulfilled, (state, action: PayloadAction<any>) => {
         state.isLoading = false;
         state.isAuthenticated = true;
-        state.user = action.payload;
+        state.user = {
+          id: action.payload.id,
+          name: action.payload.name,
+          email: action.payload.email,
+        };
+        state.profile = action.payload.profile || null;
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -150,6 +189,7 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isAuthenticated = false;
         state.user = null;
+        state.profile = null;
         state.error = null;
       })
       .addCase(logoutUser.rejected, (state, action) => {
@@ -159,5 +199,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearError, setUser, clearUser } = authSlice.actions;
+export const { logout, clearError, setUser, setProfile, clearUser } = authSlice.actions;
 export default authSlice.reducer;

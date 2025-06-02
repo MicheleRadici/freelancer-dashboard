@@ -1,4 +1,15 @@
+import { useAuth } from '@/hooks/useAuth';
+
 export default function DashboardSidebar() {
+  const { profile } = useAuth();
+  const navItems = [
+    { label: 'Dashboard', path: '/dashboard' },
+    ...(profile?.role === 'admin' ? [{ label: 'Manage Users', path: '/admin/users' }] : []),
+    ...(profile?.role === 'freelancer' ? [{ label: 'Clients', path: '/dashboard/clients' }] : []),
+    ...(profile?.role === 'client' ? [{ label: 'Projects', path: '/dashboard/projects' }] : []),
+    { label: 'Invoices', path: '/dashboard/invoices' },
+  ];
+
   return (
     <div className="hidden md:flex w-64 flex-col bg-card border-r h-screen sticky top-0">
       <div className="p-4 border-b">
@@ -6,38 +17,16 @@ export default function DashboardSidebar() {
       </div>
       <nav className="flex-1 p-4">
         <ul className="space-y-1">
-          <li>
-            <a
-              href="/dashboard"
-              className="flex items-center px-3 py-2 rounded-md text-sm font-medium hover:bg-accent hover:text-accent-foreground"
-            >
-              Dashboard
-            </a>
-          </li>
-          <li>
-            <a
-              href="/dashboard/projects"
-              className="flex items-center px-3 py-2 rounded-md text-sm font-medium hover:bg-accent hover:text-accent-foreground"
-            >
-              Projects
-            </a>
-          </li>
-          <li>
-            <a
-              href="/dashboard/clients"
-              className="flex items-center px-3 py-2 rounded-md text-sm font-medium hover:bg-accent hover:text-accent-foreground"
-            >
-              Clients
-            </a>
-          </li>
-          <li>
-            <a
-              href="/dashboard/invoices"
-              className="flex items-center px-3 py-2 rounded-md text-sm font-medium hover:bg-accent hover:text-accent-foreground"
-            >
-              Invoices
-            </a>
-          </li>
+          {navItems.map((item) => (
+            <li key={item.path}>
+              <a
+                href={item.path}
+                className="flex items-center px-3 py-2 rounded-md text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+              >
+                {item.label}
+              </a>
+            </li>
+          ))}
         </ul>
       </nav>
     </div>
