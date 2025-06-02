@@ -10,14 +10,20 @@ interface AuthRedirectProps {
 }
 
 export default function AuthRedirect({ children, redirectTo = '/pages/dashboard' }: AuthRedirectProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, profile } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      router.push(redirectTo);
+    if (!isLoading && isAuthenticated && profile?.role) {
+      if (profile.role === 'admin') {
+        router.replace('/pages/dashboard/admin');
+      } else if (profile.role === 'freelancer') {
+        router.replace('/pages/dashboard/freelancer');
+      } else if (profile.role === 'client') {
+        router.replace('/pages/dashboard/client');
+      }
     }
-  }, [isAuthenticated, isLoading, router, redirectTo]);
+  }, [isAuthenticated, isLoading, profile, router]);
 
   // Show loading state while checking authentication
   if (isLoading) {

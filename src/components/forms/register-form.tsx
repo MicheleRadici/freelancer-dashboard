@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,7 +31,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterForm() {
   const router = useRouter();
-  const { register: registerUser, isLoading, error } = useAuth();
+  const { register: registerUser, isLoading, error, profile } = useAuth();
 
   // Initialize form with validation schema
   const form = useForm<RegisterFormValues>({
@@ -53,12 +53,23 @@ export default function RegisterForm() {
       const displayName = `${data.name} ${data.surname}`.trim();
       const result = await registerUser(displayName, data.email, data.password, data.role);
       if (result.meta.requestStatus === 'fulfilled') {
-        router.push('/pages/dashboard');
+        // Removed the redirection logic from here
       }
     } catch (error) {
       console.error("Registration failed:", error);
     }
   };
+
+  // Effect to redirect based on profile role
+  useEffect(() => {
+    if (profile?.role === 'admin') {
+      router.replace('/pages/dashboard/admin');
+    } else if (profile?.role === 'freelancer') {
+      router.replace('/pages/dashboard/freelancer');
+    } else if (profile?.role === 'client') {
+      router.replace('/pages/dashboard/client');
+    }
+  }, [profile, router]);
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
