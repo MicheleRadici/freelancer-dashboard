@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, ReactNode } from 'react';
 import { onAuthStateChanged, User as FirebaseUser, getIdToken } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { useAppDispatch } from '@/hooks/useRedux';
-import { setUser, clearUser, setProfile } from '@/redux/slices/authSlice';
+import { setUser, clearUser, setProfile, setAuthReady } from '@/redux/slices/authSlice';
 import Cookies from 'js-cookie';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -83,6 +83,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         Cookies.remove('auth-token');
         dispatch(clearUser());
       }
+      // Set authReady to true after first check
+      dispatch(setAuthReady(true));
     });
 
     // Cleanup subscription on unmount

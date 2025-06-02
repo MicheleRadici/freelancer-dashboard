@@ -1,18 +1,16 @@
 "use client";
-
 import { useEffect, useState } from "react";
-import { getFreelancerProjects } from "@/lib/firebase/projects";
+import { getClientProjects } from "@/lib/firebase/projects";
 import { useAuth } from "@/hooks/useAuth";
 
-export default function FreelancerProjectsOverview() {
+export default function ClientProjects() {
   const { profile } = useAuth();
-  console.log('[FreelancerProjectsOverview] profile:', profile);
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (profile?.uid && profile.role === "freelancer") {
-      getFreelancerProjects(profile.uid).then((data) => {
+    if (profile?.uid && profile.role === "client") {
+      getClientProjects(profile.uid).then((data) => {
         setProjects(data);
         setLoading(false);
       });
@@ -35,10 +33,10 @@ export default function FreelancerProjectsOverview() {
         <div key={project.id} className="bg-card rounded-lg shadow p-4">
           <h3 className="font-semibold text-lg mb-1">{project.title}</h3>
           <p className="text-sm text-muted-foreground mb-2">{project.description}</p>
-          <p className="text-sm mb-1">Client: {project.clientName}</p>
+          <p className="text-sm mb-1">Freelancer: {project.freelancerId || "Unassigned"}</p>
           <p className="text-sm mb-1">Budget: ${project.budget}</p>
           <p className="text-sm mb-1">Status: <span className="capitalize">{project.status}</span></p>
-          <p className="text-xs text-muted-foreground">Created: {project.createdAt?.toDate ? project.createdAt.toDate().toLocaleDateString() : "–"}</p>
+          <p className="text-xs text-muted-foreground">Created: {project.createdAt?.toDate ? project.createdAt.toDate().toLocaleDateString() : (project.createdAt ? new Date(project.createdAt).toLocaleDateString() : "–")}</p>
         </div>
       ))}
     </div>

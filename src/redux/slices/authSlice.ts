@@ -31,6 +31,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  authReady: boolean; // <-- add this
 }
 
 // Initial state
@@ -40,6 +41,7 @@ const initialState: AuthState = {
   isAuthenticated: false,
   isLoading: false,
   error: null,
+  authReady: false, // <-- add this
 };
 
 // Async thunks
@@ -68,7 +70,10 @@ export const loginUser = createAsyncThunk(
 
 export const registerUser = createAsyncThunk(
   'auth/register',
-  async ({ name, email, password }: { name: string; email: string; password: string }, { rejectWithValue }) => {
+  async (
+    { name, email, password, role }: { name: string; email: string; password: string; role: string },
+    { rejectWithValue }
+  ) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
@@ -80,7 +85,7 @@ export const registerUser = createAsyncThunk(
         uid: firebaseUser.uid,
         email: firebaseUser.email || '',
         name,
-        role: 'freelancer',
+        role,
         createdAt: serverTimestamp(),
       };
       await setDoc(doc(db, 'users', firebaseUser.uid), profile);
@@ -135,6 +140,9 @@ const authSlice = createSlice({
       state.user = null;
       state.profile = null;
       state.isAuthenticated = false;
+    },
+    setAuthReady: (state, action: PayloadAction<boolean>) => {
+      state.authReady = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -199,5 +207,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearError, setUser, setProfile, clearUser } = authSlice.actions;
+export const { logout, clearError, setUser, setProfile, clearUser, setAuthReady } = authSlice.actions;
 export default authSlice.reducer;

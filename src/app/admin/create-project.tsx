@@ -60,7 +60,7 @@ export default function CreateProjectPage() {
   };
 
   return (
-    <form className="space-y-4 max-w-xl" onSubmit={handleSubmit}>
+    <form className="space-y-4 p-4 max-w-xl" onSubmit={handleSubmit}>
       <Label>Project Title</Label>
       <Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required />
 

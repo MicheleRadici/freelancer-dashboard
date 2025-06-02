@@ -1,3 +1,5 @@
+"use client";
+
 import { useAppSelector } from "@/hooks/useRedux";
 import { useRouter } from "next/navigation";
 import { ReactNode, useEffect } from "react";
@@ -10,16 +12,25 @@ interface RequireRoleProps {
 }
 
 export function RequireRole({ allowedRoles, children }: RequireRoleProps) {
-  const { profile, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { profile, isAuthenticated, isLoading, authReady } = useAppSelector((state) => state.auth);
   const router = useRouter();
 
+  // Debug: log profile and isAuthenticated
+  console.log("[RequireRole] profile:", profile, "isAuthenticated:", isAuthenticated, "isLoading:", isLoading, "authReady:", authReady);
+
   useEffect(() => {
-    if (!isAuthenticated || !profile) return;
-    if (!allowedRoles.includes(profile.role as Role)) {
+    if (authReady && isAuthenticated && profile && !allowedRoles.includes(profile.role as Role)) {
       router.replace("/unauthorized");
     }
-  }, [profile, isAuthenticated, allowedRoles, router]);
+  }, [profile, isAuthenticated, isLoading, allowedRoles, router, authReady]);
 
-  if (!isAuthenticated || !profile) return null;
+  if (!authReady || isLoading || !profile) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  if (!isAuthenticated) return null;
   return allowedRoles.includes(profile.role as Role) ? <>{children}</> : null;
 }

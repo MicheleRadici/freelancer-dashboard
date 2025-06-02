@@ -12,16 +12,19 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 
 // Define the validation schema with zod
-const registerSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters" }),
-  confirmPassword: z.string().min(8, { message: "Password confirmation is required" }),
-})
-.refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+const registerSchema = z
+  .object({
+    name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+    surname: z.string().min(2, { message: "Surname must be at least 2 characters" }),
+    email: z.string().email({ message: "Please enter a valid email address" }),
+    role: z.enum(["freelancer", "client"], { required_error: "Role is required" }),
+    password: z.string().min(8, { message: "Password must be at least 8 characters" }),
+    confirmPassword: z.string().min(8, { message: "Password confirmation is required" }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
 // Infer TypeScript type from the schema
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -29,13 +32,15 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function RegisterForm() {
   const router = useRouter();
   const { register: registerUser, isLoading, error } = useAuth();
-  
+
   // Initialize form with validation schema
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       name: "",
+      surname: "",
       email: "",
+      role: undefined,
       password: "",
       confirmPassword: "",
     },
@@ -44,7 +49,9 @@ export default function RegisterForm() {
   // Form submission handler
   const onSubmit = async (data: RegisterFormValues) => {
     try {
-      const result = await registerUser(data.name, data.email, data.password);
+      // Combine name and surname for displayName
+      const displayName = `${data.name} ${data.surname}`.trim();
+      const result = await registerUser(displayName, data.email, data.password, data.role);
       if (result.meta.requestStatus === 'fulfilled') {
         router.push('/dashboard');
       }
@@ -70,6 +77,20 @@ export default function RegisterForm() {
         )}
       </div>
       <div className="space-y-2">
+        <Label htmlFor="surname">Surname</Label>
+        <Input
+          id="surname"
+          type="text"
+          placeholder="Your Surname"
+          {...form.register("surname")}
+        />
+        {form.formState.errors.surname && (
+          <p className="text-sm text-destructive">
+            {form.formState.errors.surname.message}
+          </p>
+        )}
+      </div>
+      <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <Input
           id="email"
@@ -80,6 +101,32 @@ export default function RegisterForm() {
         {form.formState.errors.email && (
           <p className="text-sm text-destructive">
             {form.formState.errors.email.message}
+          </p>
+        )}
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="role">Role</Label>
+        <div className="flex gap-4">
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              value="freelancer"
+              {...form.register("role")}
+            />
+            Freelancer
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              value="client"
+              {...form.register("role")}
+            />
+            Client
+          </label>
+        </div>
+        {form.formState.errors.role && (
+          <p className="text-sm text-destructive">
+            {form.formState.errors.role.message}
           </p>
         )}
       </div>

@@ -6,10 +6,19 @@ export default function DashboardSidebar() {
   const { profile } = useAuth();
   const navItems = [
     { label: 'Dashboard', path: '/dashboard' },
-    ...(profile?.role === 'admin' ? [{ label: 'Manage Users', path: '/admin/users' }] : []),
-    ...(profile?.role === 'freelancer' ? [{ label: 'Clients', path: '/dashboard/clients' }] : []),
-    ...(profile?.role === 'client' ? [{ label: 'Projects', path: '/dashboard/projects' }] : []),
-    { label: 'Invoices', path: '/dashboard/invoices' },
+    ...(profile?.role === 'admin' ? [
+      { label: 'Admin', path: '/dashboard/admin' },
+      { label: 'Manage Users', path: '/admin/users' },
+      { label: 'Create Project', path: '/admin/create-project' },
+    ] : []),
+    ...(profile?.role === 'freelancer' ? [
+      { label: 'Freelancer', path: '/dashboard/freelancer' },
+      { label: 'Clients', path: '/dashboard/clients' },
+    ] : []),
+    ...(profile?.role === 'client' ? [
+      { label: 'Client', path: '/dashboard/client' },
+      { label: 'Submit Project', path: '/client/new-project' },
+    ] : []),
   ];
 
   return (
