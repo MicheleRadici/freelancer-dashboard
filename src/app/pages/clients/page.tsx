@@ -169,7 +169,7 @@ export default function FreelancerClientsPage() {
                       />
                     ))
                   ) : (
-                    <div className="col-span-full text-muted-foreground text-center py-8">No clients found</div>
+                    <div className="col-span-full text-muted-foreground text-left py-8">No clients found</div>
                   )}
                 </div>
               </section>
