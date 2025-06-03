@@ -26,11 +26,10 @@ export function ProjectCard({
   return (
     <div
       className={cn(
-        "bg-card rounded-xl shadow-lg p-6 flex flex-col gap-2 transition-all border border-neutral-300 dark:border-white",
-        "hover:border-2 hover:border-black hover:shadow-[0_0_0_4px_rgba(0,0,0,0.10)] dark:hover:border-2 dark:hover:border-white dark:hover:shadow-[0_0_0_4px_rgba(255,255,255,0.18)]",
+        // Card base
+        "bg-card border border-border rounded-xl shadow-sm p-6 flex flex-col gap-2 transition-colors hover:border-primary",
         className
       )}
-      style={{ boxShadow: undefined }}
     >
       <h2 className="font-semibold text-lg text-black dark:text-primary mb-1 flex items-center gap-2">
         <Briefcase className="w-4 h-4" /> {title}
