@@ -8,44 +8,55 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Freelancer } from '../types';
 import { useRouter } from "next/navigation";
-import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
+import { 
+  submitToFirestore, 
+  isValidString, 
+  isValidNumber, 
+  commonValidationSchemas,
+  createPasswordSchema,
+  CATEGORIES,
+  DAYS,
+  TIMEZONES,
+  SKILLS_BY_CATEGORY,
+  filterSkillsByCategories,
+  handleFormError,
+  registerWithAuth
+} from "@/lib/form-utils";
 
 const freelancerSchema = z.object({
-  bio: z.string().optional().or(z.literal("")),
-  resumeUrl: z.string().url().optional().or(z.literal("")),
-  hourlyRate: z.coerce.number().optional(),
-  skills: z.array(z.string()).min(1, { message: "Select at least one skill" }),
-  categories: z.array(z.string()).min(1, { message: "Select at least one category" }),
-  days: z.array(z.string()).min(1, { message: "Select at least one day" }),
+  bio: commonValidationSchemas.optionalString,
+  resumeUrl: commonValidationSchemas.optionalUrl,
+  hourlyRate: commonValidationSchemas.optionalNumber,
+  skills: commonValidationSchemas.stringArray.min(1, { message: "Select at least one skill" }),
+  categories: commonValidationSchemas.stringArray.min(1, { message: "Select at least one category" }),
+  days: commonValidationSchemas.stringArray.min(1, { message: "Select at least one day" }),
   hoursPerWeek: z.coerce.number().min(1, { message: "Hours per week required" }),
   timezone: z.string().min(1, { message: "Timezone required" }),
   preferredStart: z.string().min(1, { message: "Start time required" }),
   preferredEnd: z.string().min(1, { message: "End time required" }),
-  name: z.string().min(1, { message: "First name is required" }),
-  surname: z.string().min(1, { message: "Last name is required" }),
-  email: z.string().email({ message: "Invalid email address" }),
+  name: commonValidationSchemas.name,
+  surname: commonValidationSchemas.surname,
+  email: commonValidationSchemas.email,
+  password: commonValidationSchemas.password,
+  confirmPassword: commonValidationSchemas.confirmPassword,
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 type FreelancerFormValues = z.infer<typeof freelancerSchema>;
 
-const CATEGORIES = ["Design", "Development", "Writing", "Marketing", "Other"];
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
 export default function FreelancerRegisterForm() {
-  const { user } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const form = useForm<FreelancerFormValues>({
-    resolver: zodResolver(freelancerSchema),
-    defaultValues: {
+    resolver: zodResolver(freelancerSchema),    defaultValues: {
       bio: "",
       resumeUrl: "",
-      hourlyRate: undefined,
+      hourlyRate: 0,
       skills: [],
       categories: [],
       days: [],
@@ -56,17 +67,17 @@ export default function FreelancerRegisterForm() {
       name: "",
       surname: "",
       email: "",
+      password: "",
+      confirmPassword: "",
     },
-  });
-
-  async function onSubmit(data: FreelancerFormValues) {
+  });  async function onSubmit(data: FreelancerFormValues) {
     setLoading(true);
     setError("");
     try {
-      const freelancer: Omit<Freelancer, 'createdAt' | 'uid' | 'rating' | 'totalProjects' | 'completedProjects'> = {
-        bio: data.bio || undefined,
-        resumeUrl: data.resumeUrl || undefined,
-        hourlyRate: typeof data.hourlyRate === 'number' && !isNaN(data.hourlyRate) ? data.hourlyRate : 0,
+      const freelancer: Omit<Freelancer, 'createdAt' | 'uid' | 'balance' | 'rating' | 'totalProjects' | 'completedProjects'> = {
+        bio: isValidString(data.bio),
+        resumeUrl: isValidString(data.resumeUrl),
+        hourlyRate: isValidNumber(data.hourlyRate),
         skills: data.skills,
         categories: data.categories,
         availability: {
@@ -82,16 +93,20 @@ export default function FreelancerRegisterForm() {
         surname: data.surname,
         email: data.email,
       };
-      await addDoc(collection(db, "freelancers"), {
+      
+      // Register with authentication and save profile
+      const userId = await registerWithAuth(data.email, data.password, "freelancers", {
         ...freelancer,
+        balance: 0,
         rating: 0,
         totalProjects: 0,
         completedProjects: 0,
-        createdAt: serverTimestamp(),
       });
-      router.replace("/auth/login");
+      
+      // Redirect to confirmation page with user details
+      router.replace(`/pages/register-confirmation?email=${encodeURIComponent(data.email)}&type=freelancer`);
     } catch (e: any) {
-      setError(e.message || "Registration failed");
+      setError(handleFormError(e));
     } finally {
       setLoading(false);
     }
@@ -115,13 +130,28 @@ export default function FreelancerRegisterForm() {
             <p className="text-sm text-destructive">{form.formState.errors.surname.message}</p>
           )}
         </div>
-      </div>
-      <div className="space-y-2">
+      </div>      <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <Input id="email" type="email" {...form.register("email")} />
         {form.formState.errors.email && (
           <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
         )}
+      </div>
+      <div className="flex gap-4">
+        <div className="space-y-2 w-1/2">
+          <Label htmlFor="password">Password</Label>
+          <Input id="password" type="password" {...form.register("password")} />
+          {form.formState.errors.password && (
+            <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
+          )}
+        </div>
+        <div className="space-y-2 w-1/2">
+          <Label htmlFor="confirmPassword">Confirm Password</Label>
+          <Input id="confirmPassword" type="password" {...form.register("confirmPassword")} />
+          {form.formState.errors.confirmPassword && (
+            <p className="text-sm text-destructive">{form.formState.errors.confirmPassword.message}</p>
+          )}
+        </div>
       </div>
       <div className="space-y-2">
         <Label htmlFor="bio">Bio <span className="text-xs text-muted-foreground">(optional)</span></Label>
@@ -154,33 +184,15 @@ export default function FreelancerRegisterForm() {
                 <input
                   type="checkbox"
                   value={cat}
-                  checked={checked}
-                  onChange={e => {
+                  checked={checked}                  onChange={e => {
                     const prev = form.getValues("categories");
                     if (e.target.checked) {
                       form.setValue("categories", [...prev, cat]);
                     } else {
-                      form.setValue("categories", prev.filter((c: string) => c !== cat));
-                      // Remove related skills if category is unchecked
-                      const newSkills = form.getValues("skills").filter((skill: string) => {
-                        if (cat === "Development") {
-                          return !["Front-end","Back-end","Full-stack","Mobile","DevOps","QA / Testing","Game Development","Embedded","AI / ML","Other"].includes(skill);
-                        }
-                        if (cat === "Design") {
-                          return !["UI Design","UX Design","Graphic Design","Web Design","Product Design","Branding","Animation","Illustration","Other"].includes(skill);
-                        }
-                        if (cat === "Writing") {
-                          return !["Copywriting","Technical Writing","Content Writing","Editing","Proofreading","SEO Writing","Other"].includes(skill);
-                        }
-                        if (cat === "Marketing") {
-                          return !["Digital Marketing","SEO","Content Marketing","Social Media","Email Marketing","PPC / SEM","Affiliate Marketing","Market Research","Other"].includes(skill);
-                        }
-                        if (cat === "Other") {
-                          return !["Other"].includes(skill);
-                        }
-                        return true;
-                      });
-                      form.setValue("skills", newSkills);
+                      const newCategories = prev.filter((c: string) => c !== cat);
+                      form.setValue("categories", newCategories);
+                      const filteredSkills = filterSkillsByCategories(form.getValues("skills"), newCategories);
+                      form.setValue("skills", filteredSkills);
                     }
                   }}
                   className="accent-primary"
@@ -193,164 +205,36 @@ export default function FreelancerRegisterForm() {
         {form.formState.errors.categories && (
           <p className="text-sm text-destructive">{form.formState.errors.categories.message}</p>
         )}
-      </div>
-      <div className="space-y-2">
+      </div>      <div className="space-y-2">
         <Label htmlFor="skills">Skills</Label>
         {form.watch("categories").length === 0 && (
           <p className="text-xs text-muted-foreground">Select at least one category to choose skills.</p>
         )}
         <div className="flex flex-wrap gap-2">
-          {form.watch("categories").includes("Development") && [
-            "Front-end",
-            "Back-end",
-            "Full-stack",
-            "Mobile",
-            "DevOps",
-            "QA / Testing",
-            "Game Development",
-            "Embedded",
-            "AI / ML",
-            "Other"
-          ].map(skill => {
-            const checked = form.watch("skills").includes(skill);
-            return (
-              <label key={skill} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  value={skill}
-                  checked={checked}
-                  onChange={e => {
-                    const prev = form.getValues("skills");
-                    if (e.target.checked) {
-                      form.setValue("skills", [...prev, skill]);
-                    } else {
-                      form.setValue("skills", prev.filter((s: string) => s !== skill));
-                    }
-                  }}
-                  className="accent-primary"
-                />
-                {skill}
-              </label>
-            );
-          })}
-          {form.watch("categories").includes("Design") && [
-            "UI Design",
-            "UX Design",
-            "Graphic Design",
-            "Web Design",
-            "Product Design",
-            "Branding",
-            "Animation",
-            "Illustration",
-            "Other"
-          ].map(skill => {
-            const checked = form.watch("skills").includes(skill);
-            return (
-              <label key={skill} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  value={skill}
-                  checked={checked}
-                  onChange={e => {
-                    const prev = form.getValues("skills");
-                    if (e.target.checked) {
-                      form.setValue("skills", [...prev, skill]);
-                    } else {
-                      form.setValue("skills", prev.filter((s: string) => s !== skill));
-                    }
-                  }}
-                  className="accent-primary"
-                />
-                {skill}
-              </label>
-            );
-          })}
-          {form.watch("categories").includes("Writing") && [
-            "Copywriting",
-            "Technical Writing",
-            "Content Writing",
-            "Editing",
-            "Proofreading",
-            "SEO Writing",
-            "Other"
-          ].map(skill => {
-            const checked = form.watch("skills").includes(skill);
-            return (
-              <label key={skill} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  value={skill}
-                  checked={checked}
-                  onChange={e => {
-                    const prev = form.getValues("skills");
-                    if (e.target.checked) {
-                      form.setValue("skills", [...prev, skill]);
-                    } else {
-                      form.setValue("skills", prev.filter((s: string) => s !== skill));
-                    }
-                  }}
-                  className="accent-primary"
-                />
-                {skill}
-              </label>
-            );
-          })}
-          {form.watch("categories").includes("Marketing") && [
-            "Digital Marketing",
-            "SEO",
-            "Content Marketing",
-            "Social Media",
-            "Email Marketing",
-            "PPC / SEM",
-            "Affiliate Marketing",
-            "Market Research",
-            "Other"
-          ].map(skill => {
-            const checked = form.watch("skills").includes(skill);
-            return (
-              <label key={skill} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  value={skill}
-                  checked={checked}
-                  onChange={e => {
-                    const prev = form.getValues("skills");
-                    if (e.target.checked) {
-                      form.setValue("skills", [...prev, skill]);
-                    } else {
-                      form.setValue("skills", prev.filter((s: string) => s !== skill));
-                    }
-                  }}
-                  className="accent-primary"
-                />
-                {skill}
-              </label>
-            );
-          })}
-          {form.watch("categories").includes("Other") && [
-            "Other"
-          ].map(skill => {
-            const checked = form.watch("skills").includes(skill);
-            return (
-              <label key={skill} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  value={skill}
-                  checked={checked}
-                  onChange={e => {
-                    const prev = form.getValues("skills");
-                    if (e.target.checked) {
-                      form.setValue("skills", [...prev, skill]);
-                    } else {
-                      form.setValue("skills", prev.filter((s: string) => s !== skill));
-                    }
-                  }}
-                  className="accent-primary"
-                />
-                {skill}
-              </label>
-            );
-          })}
+          {form.watch("categories").map(category => 
+            SKILLS_BY_CATEGORY[category as keyof typeof SKILLS_BY_CATEGORY]?.map(skill => {
+              const checked = form.watch("skills").includes(skill);
+              return (
+                <label key={`${category}-${skill}`} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    value={skill}
+                    checked={checked}
+                    onChange={e => {
+                      const prev = form.getValues("skills");
+                      if (e.target.checked) {
+                        form.setValue("skills", [...prev, skill]);
+                      } else {
+                        form.setValue("skills", prev.filter((s: string) => s !== skill));
+                      }
+                    }}
+                    className="accent-primary"
+                  />
+                  {skill}
+                </label>
+              );
+            })
+          )}
         </div>
         {form.formState.errors.skills && (
           <p className="text-sm text-destructive">{form.formState.errors.skills.message}</p>
@@ -382,21 +266,13 @@ export default function FreelancerRegisterForm() {
           {form.formState.errors.hoursPerWeek && (
             <p className="text-sm text-destructive">{form.formState.errors.hoursPerWeek.message}</p>
           )}
-        </div>
-        <div className="space-y-2 w-1/2">
+        </div>        <div className="space-y-2 w-1/2">
           <Label htmlFor="timezone">Timezone</Label>
           <select id="timezone" {...form.register("timezone")}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-            <option value="">Select timezone</option>
-            <option value="Europe/London">Europe/London</option>
-            <option value="Europe/Rome">Europe/Rome</option>
-            <option value="Europe/Paris">Europe/Paris</option>
-            <option value="America/New_York">America/New_York</option>
-            <option value="America/Los_Angeles">America/Los_Angeles</option>
-            <option value="Asia/Tokyo">Asia/Tokyo</option>
-            <option value="Asia/Dubai">Asia/Dubai</option>
-            <option value="Australia/Sydney">Australia/Sydney</option>
-            <option value="UTC">UTC</option>
+            {TIMEZONES.map(tz => (
+              <option key={tz.value} value={tz.value}>{tz.label}</option>
+            ))}
           </select>
           {form.formState.errors.timezone && (
             <p className="text-sm text-destructive">{form.formState.errors.timezone.message}</p>
@@ -420,9 +296,8 @@ export default function FreelancerRegisterForm() {
         </div>
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
-      <div className="pt-4">
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Registering..." : "Register as Client"}
+      <div className="pt-4">        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? "Registering..." : "Register as Freelancer"}
         </Button>
       </div>
     </form>

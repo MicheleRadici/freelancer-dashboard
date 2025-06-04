@@ -8,75 +8,78 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Client } from '../types';
 import { useRouter } from "next/navigation";
-import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
+import { 
+  isValidString, 
+  commonValidationSchemas,
+  ROLES,
+  handleFormError,
+  registerWithAuth
+} from "@/lib/form-utils";
 
 const clientSchema = z.object({
-  companyName: z.string().min(2, { message: "Company name is required" }),
-  website: z.string().url().optional().or(z.literal("")),
-  contactPhone: z.string().optional().or(z.literal("")),
-  budgetMin: z.coerce.number().min(0, { message: "Min budget required" }),
-  budgetMax: z.coerce.number().min(0, { message: "Max budget required" }),
-  rolesNeeded: z.array(z.string()).min(1, { message: "Select at least one role" }),
-  name: z.string().min(1, { message: "First name is required" }),
-  surname: z.string().min(1, { message: "Last name is required" }),
-  email: z.string().email({ message: "Invalid email address" }),
+  companyName: commonValidationSchemas.optionalString,
+  website: commonValidationSchemas.optionalUrl,
+  contactPhone: commonValidationSchemas.optionalString,
+  rolesNeeded: commonValidationSchemas.stringArray.min(1, { message: "Select at least one role" }),
+  name: commonValidationSchemas.name,
+  surname: commonValidationSchemas.surname,
+  email: commonValidationSchemas.email,
+  password: commonValidationSchemas.password,
+  confirmPassword: commonValidationSchemas.confirmPassword,
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 type ClientFormValues = z.infer<typeof clientSchema>;
 
-const ROLES = ["Designer", "Developer", "Marketer", "Other"];
-
 export default function ClientRegisterForm() {
-  const { user } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const form = useForm<ClientFormValues>({
+  const [error, setError] = useState("");  const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
     defaultValues: {
       companyName: "",
       website: "",
       contactPhone: "",
-      budgetMin: 0,
-      budgetMax: 0,
       rolesNeeded: [],
       name: "",
       surname: "",
       email: "",
+      password: "",
+      confirmPassword: "",
     },
-  });
-
-  async function onSubmit(data: ClientFormValues) {
+  });  async function onSubmit(data: ClientFormValues) {
     setLoading(true);
     setError("");
     try {
-      const client: Omit<Client, 'createdAt' | 'uid'> = {
-        companyName: data.companyName,
-        website: data.website || undefined,
-        contactPhone: data.contactPhone || undefined,
-        budgetRange: { min: data.budgetMin, max: data.budgetMax },
+      const client: Omit<Client, 'createdAt' | 'uid' | 'balance'> = {
+        companyName: isValidString(data.companyName),
+        website: isValidString(data.website),
+        contactPhone: isValidString(data.contactPhone),
         rolesNeeded: data.rolesNeeded,
         name: data.name,
         surname: data.surname,
         email: data.email,
       };
-      await addDoc(collection(db, "clients"), {
+      
+      // Register with authentication and save profile
+      const userId = await registerWithAuth(data.email, data.password, "clients", {
         ...client,
-        createdAt: serverTimestamp(),
+        balance: 0, // Initialize balance to 0
       });
-      router.replace("/auth/login");
+      
+      // Redirect to confirmation page with user details
+      router.replace(`/pages/register-confirmation?email=${encodeURIComponent(data.email)}&type=client`);
     } catch (e: any) {
-      setError(e.message || "Registration failed");
+      setError(handleFormError(e));
     } finally {
       setLoading(false);
     }
   }
-
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-w-2xl mx-auto">
       <h2 className="text-xl font-bold mb-4">Client Registration</h2>
       <div className="flex gap-4">
         <div className="space-y-2 w-1/2">
@@ -93,13 +96,28 @@ export default function ClientRegisterForm() {
             <p className="text-sm text-destructive">{form.formState.errors.surname.message}</p>
           )}
         </div>
-      </div>
-      <div className="space-y-2">
+      </div>      <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <Input id="email" type="email" {...form.register("email")} />
         {form.formState.errors.email && (
           <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
         )}
+      </div>
+      <div className="flex gap-4">
+        <div className="space-y-2 w-1/2">
+          <Label htmlFor="password">Password</Label>
+          <Input id="password" type="password" {...form.register("password")} />
+          {form.formState.errors.password && (
+            <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
+          )}
+        </div>
+        <div className="space-y-2 w-1/2">
+          <Label htmlFor="confirmPassword">Confirm Password</Label>
+          <Input id="confirmPassword" type="password" {...form.register("confirmPassword")} />
+          {form.formState.errors.confirmPassword && (
+            <p className="text-sm text-destructive">{form.formState.errors.confirmPassword.message}</p>
+          )}
+        </div>
       </div>
       <div className="space-y-2">
         <Label htmlFor="companyName">Company Name <span className="text-xs text-muted-foreground">(optional)</span></Label>
@@ -119,30 +137,7 @@ export default function ClientRegisterForm() {
         <Label htmlFor="contactPhone">Contact Phone <span className="text-xs text-muted-foreground">(optional)</span></Label>
         <Input id="contactPhone" {...form.register("contactPhone")} />
         {form.formState.errors.contactPhone && (
-          <p className="text-sm text-destructive">{form.formState.errors.contactPhone.message}</p>
-        )}
-      </div>
-      <div className="flex gap-4">
-        <div className="space-y-2 w-1/2">
-          <Label htmlFor="budgetMin">Budget Min.</Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-            <Input id="budgetMin" type="number" {...form.register("budgetMin", { valueAsNumber: true })} className="pl-7" />
-          </div>
-          {form.formState.errors.budgetMin && (
-            <p className="text-sm text-destructive">{form.formState.errors.budgetMin.message}</p>
-          )}
-        </div>
-        <div className="space-y-2 w-1/2">
-          <Label htmlFor="budgetMax">Budget Max.</Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-            <Input id="budgetMax" type="number" {...form.register("budgetMax", { valueAsNumber: true })} className="pl-7" />
-          </div>
-          {form.formState.errors.budgetMax && (
-            <p className="text-sm text-destructive">{form.formState.errors.budgetMax.message}</p>
-          )}
-        </div>
+          <p className="text-sm text-destructive">{form.formState.errors.contactPhone.message}</p>        )}
       </div>
       <div className="space-y-2">
         <Label>Roles Needed</Label>

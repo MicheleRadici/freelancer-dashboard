@@ -6,7 +6,7 @@ export interface Freelancer {
   email: string;
   bio?: string;
   resumeUrl?: string;
-  hourlyRate: number;
+  hourlyRate?: number;
   skills: string[];
   categories: string[];
   availability: {
@@ -18,6 +18,7 @@ export interface Freelancer {
     start: string;
     end: string;
   };
+  balance: number;
   rating: number;
   totalProjects: number;
   completedProjects: number;
@@ -33,10 +34,7 @@ export interface Client {
   companyName?: string;
   website?: string;
   contactPhone?: string;
-  budgetRange: {
-    min: number;
-    max: number;
-  };
+  balance: number;
   rolesNeeded: string[];
   createdAt: string;
 }
