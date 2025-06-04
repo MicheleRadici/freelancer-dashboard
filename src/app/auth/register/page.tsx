@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import RegisterForm from '@/components/forms/register-form';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Register - WorkForge',
@@ -7,17 +7,6 @@ export const metadata: Metadata = {
 };
 
 export default function RegisterPage() {
-  return (
-    <main
-      className="flex min-h-screen items-center justify-center p-6"
-      style={{ background: '#23272f' }}
-    >
-      <div className="w-full max-w-md p-8 bg-card rounded-lg shadow">
-        <h1 className="text-2xl font-bold mb-6 text-center">
-          Create your WorkForge account
-        </h1>
-        <RegisterForm />
-      </div>
-    </main>
-  );
+  redirect('/auth/register/choose-role');
+  return null;
 }
