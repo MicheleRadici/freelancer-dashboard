@@ -7,7 +7,7 @@ export default function AuthLayout({
 }) {
   return (
     <AuthRedirect>
-      <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40">
+      <div className="flex min-h-screen flex-col items-center justify-center" style={{ background: '#23272f' }}>
         {children}
       </div>
     </AuthRedirect>
