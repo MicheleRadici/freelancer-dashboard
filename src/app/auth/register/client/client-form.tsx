@@ -53,7 +53,6 @@ export default function ClientRegisterForm() {
     setLoading(true);
     setError("");
     try {
-      if (!user?.id) throw new Error("Not authenticated");
       const client: Omit<Client, 'createdAt' | 'uid'> = {
         companyName: data.companyName,
         website: data.website || undefined,
@@ -66,7 +65,6 @@ export default function ClientRegisterForm() {
       };
       await addDoc(collection(db, "clients"), {
         ...client,
-        uid: user.id,
         createdAt: serverTimestamp(),
       });
       router.replace("/auth/login");

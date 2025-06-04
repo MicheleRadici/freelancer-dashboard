@@ -63,7 +63,6 @@ export default function FreelancerRegisterForm() {
     setLoading(true);
     setError("");
     try {
-      if (!user?.id) throw new Error("Not authenticated");
       const freelancer: Omit<Freelancer, 'createdAt' | 'uid' | 'rating' | 'totalProjects' | 'completedProjects'> = {
         bio: data.bio || undefined,
         resumeUrl: data.resumeUrl || undefined,
@@ -85,7 +84,6 @@ export default function FreelancerRegisterForm() {
       };
       await addDoc(collection(db, "freelancers"), {
         ...freelancer,
-        uid: user.id,
         rating: 0,
         totalProjects: 0,
         completedProjects: 0,
@@ -360,7 +358,7 @@ export default function FreelancerRegisterForm() {
       </div>
       <div className="space-y-2">
         <Label>Availability Days</Label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-4">
           {DAYS.map(day => (
             <label key={day} className="flex items-center gap-2">
               <input
